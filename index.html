@@ -53,6 +53,12 @@ button{font:inherit;font-size:15px;font-weight:600;padding:13px 18px;border-radi
 .pri{flex:1;background:var(--teal);color:#fff}.pri:hover{background:var(--teal-dark)}
 .sec{background:#fff;color:var(--teal-dark)}.sec:hover{background:var(--teal-light)}
 .opt.off{opacity:.45;cursor:not-allowed;background:#f3f3f3}.opt.off:hover{border-color:var(--gray-line)}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-bottom:16px}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;background:#fff;color:var(--text);border:1px solid var(--gray-line)}
+.day b{font-size:18px;line-height:1.2}.day small{font-size:11px;color:var(--gray-text)}
+.day:hover:not(:disabled){border-color:var(--teal);background:var(--teal-light)}
+.day.on{background:var(--teal);border-color:var(--teal);color:#fff}.day.on small{color:rgba(255,255,255,.85)}
+.day:disabled{background:#f3f3f3;border-color:var(--gray-line);color:#aaa;opacity:.6}
 button:disabled{background:#ccc;border-color:#ccc;color:#fff;cursor:not-allowed}
 dl{margin:0}dt{color:var(--gray-text);font-size:12px;margin-top:12px}dd{font-weight:600;word-break:break-all}
 .ve{border:1px solid #EEBEBE;border-left:4px solid var(--red);border-radius:3px;background:#FDF5F5;padding:12px 14px;color:#7A2020;font-size:13.5px;margin-top:14px}
@@ -159,7 +165,7 @@ function info(){
 function option(){
   const d=S.d;
   $("#view").innerHTML=title("เลือกความประสงค์")+`
-  <label class="opt"><input type="radio" name="o" value="refund" ${d.option==="refund"?"checked":""}><div><b>1. ยกเลิกและขอ Refund ค่าสอบคืน (แจ้งความประสงค์ภายในวันที่ 30 กันยายน 2569 ก่อนเวลา 16.30 น.)</b><span>ดำเนินการคืนเงินภายใน 7 วัน</span></div></label>
+  <label class="opt"><input type="radio" name="o" value="refund" ${d.option==="refund"?"checked":""}><div><b>1. ยกเลิกและขอ Refund ค่าสอบคืน (แจ้งความประสงค์ภายในวันที่ 30 กันยายน 2569 ก่อนเวลา 12.00 น.)</b><span>ดำเนินการคืนเงินภายใน 7 วัน</span></div></label>
   <label class="opt"><input type="radio" name="o" value="move" ${d.option==="move"?"checked":""}><div><b>2. เลื่อนรอบสอบ</b><span>เฉพาะรอบสอบ Paper Based Testing วันที่ 29 กันยายน - 17 ตุลาคม 2569 เท่านั้น</span></div></label>
   <div class="err" id="e_o"></div>`+nav();
   $("#next").onclick=()=>{
@@ -193,11 +199,32 @@ function detail(){
     <div class="notice"><div class="nh">คำอธิบายเพิ่มเติม</div><div class="nb">สำหรับผู้ที่ต้องการเลื่อนรอบสอบ TOEIC Listening & Reading Paper - Based Testing CPA (Thailand) กำหนดวันและเวลาสอบ ดังนี้ 
 รอบสอบเวลา 9.00 น. และ 13.30 น. ของวันอังคารที่ 29 กันยายน - วันเสาร์ 17 ตุลาคม 2569 (ยกเว้นวันที่ 13 ตุลาคม 2569)
 กรณีผู้ที่ไม่สะดวกเลื่อนสอบตามวันและเวลาดังกล่าว ขอให้ผู้สอบทำการยกเลิก Refund ค่าสอบคืน และทำการจองสอบรอบใหม่ทาง CPA LINE SHOPPING หรือ CPA Call Center</div></div>`+
-     DATES.map(x=>`<label class="opt${x.off?" off":""}"><input type="radio" name="dt" value="${x.v}" ${d.date===x.v?"checked":""} ${x.off?"disabled":""}><div><b>${x.t}</b><span>${x.off?x.note:x.en}</span></div></label>`).join("")+
-    `<div class="err" id="e_dt"></div>`+nav();
+    `<div style="font-size:13px;font-weight:600;margin-bottom:8px">1. เลือกวันสอบ</div>
+    <div class="days" id="days"></div>
+    <div class="hint" style="margin:-8px 0 16px">วันที่เป็นสีเทาไม่สามารถเลือกได้</div>
+    <div id="rounds"></div><div class="err" id="e_dt"></div>`+nav();
+    const TH=['อา','จ','อ','พ','พฤ','ศ','ส'];
+    const MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const byDay={};DATES.forEach(x=>(byDay[x.day]=byDay[x.day]||[]).push(x));
+    let selDay=S.d.date?S.d.date.split("|")[0]:"";
+    const draw=()=>{
+      $("#days").innerHTML=Object.keys(byDay).map(k=>{
+        const off=byDay[k].every(x=>x.off),dt=new Date(k+"T00:00:00Z");
+        return `<button type="button" class="day${k===selDay?" on":""}" data-d="${k}" ${off?"disabled":""}><small>${TH[dt.getUTCDay()]}</small><b>${dt.getUTCDate()}</b><small>${MS[dt.getUTCMonth()]}</small></button>`;
+      }).join("");
+      $("#rounds").innerHTML=selDay?`<div style="font-size:13px;font-weight:600;margin-bottom:8px">2. เลือกรอบสอบ</div>`+
+        byDay[selDay].map(x=>`<label class="opt${x.off?" off":""}"><input type="radio" name="dt" value="${x.v}" ${S.d.date===x.v?"checked":""} ${x.off?"disabled":""}><div><b>รอบ ${x.v.split("|")[1].replace(":",".")} น.</b><span>${x.off?x.note:x.t}</span></div></label>`).join(""):"";
+    };
+    draw();
+    $("#days").onclick=e=>{
+      const b=e.target.closest(".day");if(!b||b.disabled)return;
+      selDay=b.dataset.d;
+      if(!S.d.date.startsWith(selDay))S.d.date="";
+      $("#e_dt").textContent="";draw();
+    };
     $("#next").onclick=()=>{
       const c=document.querySelector('input[name=dt]:checked');
-      if(!c){$("#e_dt").textContent="กรุณาเลือกวันสอบ";return}
+      if(!c){$("#e_dt").textContent=selDay?"กรุณาเลือกรอบสอบ":"กรุณาเลือกวันสอบ";return}
       S.d.date=c.value;go("review");
     };
   }
